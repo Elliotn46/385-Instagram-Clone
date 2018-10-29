@@ -86,22 +86,35 @@ async def read_multipart(reader: MultipartReader) -> Tuple[dict, bytearray]:
     jpeg = await part2.read(decode=False)
     return (metadata, jpeg)
 
-def upload(storage_client: storage.Client, metadata: dict, jpeg: bytes):
+
+def storage_blob_name(identifier: str) -> str:
+    return f'{identifier}.jpeg'
+
+def storage_upload(request: web.Request, identifier: str, jpeg: bytes):
+    storage_client = request.app['storage_client']
     bucket = storage_client.bucket(STORAGE_BUCKET)
-    blob = bucket.blob(f'{metadata["content_id"]}.jpeg')
-    blob.metadata = metadata
+    blob = bucket.blob(storage_blob_name(identifier))
+    # TODO: get user_id from request
+    blob.metadata = {'user_id': 'TODO', 'content_id': identifier}
     # XXX: bytes() probably makes a copy, AND the upload is NOT async!
     blob.upload_from_string(bytes(jpeg), content_type='image/jpeg')
 
+def storage_delete(request: web.Request, identifier: str):
+    storage_client = request.app['storage_client']
+    bucket = storage_client.bucket(STORAGE_BUCKET)
+    blob = bucket.blob(storage_blob_name(identifier))
+    # XXX: NOT async!
+    blob.delete()
 
-async def post(request: web.Request):
-    app = request.app
+
+async def post(request: web.Request) -> web.Response:
     reader = await request.multipart()
     metadata, jpeg = await read_multipart(reader)
-    metadata['content_id'] = str(uuid.uuid4())
-    upload(app['storage_client'], metadata, bytes(jpeg))
-    await mq_publish(app['mq'], metadata, 'uploads')
-    raise web.HTTPCreated(headers={'Location': f'/content/{metadata["content_id"]}'})
+    identifier = str(uuid.uuid4())
+    storage_upload(request, identifier, bytes(jpeg))
+    metadata['content_id'] = identifier
+    await mq_publish(request, content, 'uploads')
+    raise web.HTTPCreated(headers={'Location': f'/content/{identifier}'})
 
 async def put(request: web.Request) -> web.Response:
     metadata = await request.json()
@@ -111,6 +124,7 @@ async def put(request: web.Request) -> web.Response:
 
 async def delete(request: web.Request) -> web.Response:
     identifier = request.match_info['content_id']
+    storage_delete(request, identifier)
     metadata = {'content_id': identifier}
     await mq_publish(request, metadata, 'deletes')
     raise web.HTTPNoContent()
