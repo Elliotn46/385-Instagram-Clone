@@ -113,7 +113,7 @@ async def post(request: web.Request) -> web.Response:
     identifier = str(uuid.uuid4())
     storage_upload(request, identifier, bytes(jpeg))
     metadata['content_id'] = identifier
-    await mq_publish(request, content, 'uploads')
+    await mq_publish(request, metadata, 'uploads')
     raise web.HTTPCreated(headers={'Location': f'/content/{identifier}'})
 
 async def put(request: web.Request) -> web.Response:
