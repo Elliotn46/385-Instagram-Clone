@@ -33,27 +33,41 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 """
 
 import os, sys
+import json, uuid
+from typing import Tuple
 
-from aiohttp import ClientSession, MultipartWriter, hdrs, web
+from aiohttp import ClientSession, MultipartReader, MultipartWriter, hdrs, web
 import aioamqp
 from aioamqp.channel import Channel
-import uuid
+
+from google.cloud import storage
 
 
-UPLOAD_BUCKET_URL = 'https://www.googleapis.com/upload/storage/v1/b/uploads'
+STORAGE_BUCKET = '385ig'
 
 
 async def mq_connect(app: web.Application):
     transport, protocol = await aioamqp.connect(os.environ['RABBITMQ_SERVICE_SERVICE_HOST'],
                                                 os.environ['RABBITMQ_SERVICE_SERVICE_PORT'])
+    channel = await protocol.channel()
+    await channel.queue_declare(queue_name='uploads', durable=True)
+    await channel.queue_declare(queue_name='edits',   durable=True)
+    await channel.queue_declare(queue_name='deletes', durable=True)
+    await channel.close()
     app['mq'] = (transport, protocol)
-    async with protocol.channel() as chan:
-        await chan.declare_queue(queue_name='uploads')
-        await chan.declare_queue(queue_name='edits')
-        await chan.declare_queue(queue_name='deletes')
 
-async def mq_channel(request: web.Request) -> Channel:
+def mq_channel(request: web.Request) -> Channel:
     return request.app['mq'][1].channel()
+
+async def mq_publish(request: web.Request, metadata: dict, key: str):
+    channel = await mq_channel(request)
+    await channel.basic_publish(
+        payload=json.dumps(metadata),
+        exchange_name='',
+        routing_key=key,
+        properties={'delivery_mode': 2}
+    )
+    await channel.close()
 
 async def mq_close(app: web.Application):
     transport, protocol = app['mq']
@@ -61,62 +75,59 @@ async def mq_close(app: web.Application):
     transport.close()
 
 
-async def read_multipart(request: web.Request):
-    reader = await request.multipart()
+async def read_multipart(reader: MultipartReader) -> Tuple[dict, bytearray]:
     part1 = await reader.next()
     if part1 is None or part1.headers[hdrs.CONTENT_TYPE] != 'application/json':
-        raise web.HTTPNotAcceptable()
+        raise web.HTTPNotAcceptable(reason='expected metadata')
     metadata = await part1.json()
     part2 = await reader.next()
     if part2 is None or part2.headers[hdrs.CONTENT_TYPE] != 'image/jpeg':
-        raise web.HTTPNotAcceptable()
-    jpeg = part1
+        raise web.HTTPNotAcceptable(reason='expected image data')
+    jpeg = await part2.read(decode=False)
     return (metadata, jpeg)
 
-async def write_multipart(identifier, metadata, jpeg):
-    with MultipartWriter('mixed/related', boundary='-- --') as mpwriter:
-        mpwriter.append_json(metadata)
-        mpwriter.append(jpeg, {'Content-Type': 'image/jpeg'})
-        async with ClientSession() as session:
-            async with session.post(f'{UPLOAD_BUCKET_URL}/{identifier}_original.jpeg',
-                    params={'uploadType': 'multipart'}, data=mpwriter) as resp:
-                if not resp.ok:
-                    raise web.HTTPServiceUnavailable()
+def upload(storage_client: storage.Client, metadata: dict, jpeg: bytes):
+    bucket = storage_client.bucket(STORAGE_BUCKET)
+    blob = bucket.blob(f'{metadata["content_id"]}.jpeg')
+    blob.metadata = metadata
+    # XXX: bytes() probably makes a copy, AND the upload is NOT async!
+    blob.upload_from_string(bytes(jpeg), content_type='image/jpeg')
 
 
 async def post(request: web.Request):
-    metadata, jpeg = await read_multipart(request)
-    identifier = uuid.uuid4()
-    await write_multipart(identifier, {'original filename': jpeg.filename}, jpeg)
-    metadata['content_id'] = identifier
-    async with mq_channel(request) as channel:
-        await channel.basic_publish(payload=metadata, exchange_name='', routing_key='uploads')
-    raise web.HTTPAccepted()
+    app = request.app
+    reader = await request.multipart()
+    metadata, jpeg = await read_multipart(reader)
+    metadata['content_id'] = str(uuid.uuid4())
+    upload(app['storage_client'], metadata, bytes(jpeg))
+    await mq_publish(app['mq'], metadata, 'uploads')
+    raise web.HTTPCreated(headers={'Location': f'/content/{metadata["content_id"]}'})
 
 async def put(request: web.Request) -> web.Response:
     metadata = await request.json()
     metadata['content_id'] = request.match_info['content_id']
-    async with mq_channel(request) as chan:
-        await chan.basic_publish(payload=metadata, exchange_name='', routing_key='edits')
-    raise web.HTTPAccepted()
+    await mq_publish(request, metadata, 'edits')
+    raise web.HTTPNoContent()
 
 async def delete(request: web.Request) -> web.Response:
     identifier = request.match_info['content_id']
-    async with mq_channel(request) as chan:
-        await chan.basic_publish(payload=identifier, exchange_name='', routing_key='deletes')
+    metadata = {'content_id': identifier}
+    await mq_publish(request, metadata, 'deletes')
     raise web.HTTPNoContent()
 
 
 async def init_app(argv=None) -> web.Application:
     
     app = web.Application()
+
+    app['storage_client'] = storage.Client()
     
     app.on_startup.append(mq_connect)
     app.on_cleanup.append(mq_close)
 
     app.router.add_post('/', post)
-    app.router.add_put('/', put)
-    app.router.add_delete('/', delete)
+    app.router.add_put('/{content_id}', put)
+    app.router.add_delete('/{content_id}', delete)
 
     return app
 
