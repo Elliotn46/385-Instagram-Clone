@@ -1,0 +1,23 @@
+version: '3'
+services:
+  feed_api:
+    build: feed_api/
+    ports:
+      - "8080:8080"
+    links:
+      - redis
+      # - kafka
+  redis:
+    image: redis:5.0.0
+  kafka:
+    build: kafka/
+    links:
+      - zookeeper
+  kafka_feed_consumer:
+    build: cache_kafka_consumer/
+    links:
+      - kafka
+      - redis
+
+  zookeeper:
+    image: zookeeper:3.4.11

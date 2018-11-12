@@ -23,31 +23,20 @@ type instagram_post struct {
     Comments_link  string     `json:"comment"`
 }
 
-var redis_client *redis.Client
 
+var redis_client *redis.Client
+var kafka_consumer *cluster.Consumer
 
 // https://www.oreilly.com/library/view/kafka-the-definitive/9781491936153/ch04.html
 
 func main() {
 
-  log.Println("Connecting to redis")
 
   set_up_redis()
+	set_up_kafka()
+	defer kafka_consumer.Close()
   defer redis_client.Close()
 
-  log.Println("Connecting to kafka")
-  config := cluster.NewConfig()
-	config.Group.Mode = cluster.ConsumerModePartitions
-
-	// init consumer
-	brokers := []string{"kafka:9092"}
-	topics := []string{"instagram_cache"}
-	consumer, err := cluster.NewConsumer(brokers, "test_group", topics, config)
-	if err != nil {
-		panic(err)
-	}
-	defer consumer.Close()
-  log.Println("Connected to kafka")
 	// trap SIGINT to trigger a shutdown.
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
@@ -55,7 +44,7 @@ func main() {
 	// consume partitions
 	for {
 		select {
-		case part, ok := <-consumer.Partitions():
+		case part, ok := <-kafka_consumer.Partitions():
 			if !ok {
 				return
 			}
@@ -75,7 +64,7 @@ func main() {
             insert_redis(ip.User_id, ip)
           }
 
-          consumer.MarkOffset(msg, "")	// mark message as processed
+          kafka_consumer.MarkOffset(msg, "")	// mark message as processed
 				}
 			}(part)
 		case <-signals:
@@ -84,11 +73,32 @@ func main() {
 	}
 }
 
+func set_up_kafka() {
+	config := cluster.NewConfig()
+	config.Group.Mode = cluster.ConsumerModePartitions
+	brokers := []string{"kafka:9092"}
+	// brokers := []string{"localhost:9092"}
+	topics := []string{"instagram_cache"}
+	var err error
+	log.Println("Attempting to connect to kafka")
+	for true {
+		kafka_consumer, err = cluster.NewConsumer(brokers, "test_group", topics, config)
+		if err != nil {
+			log.Println(err)
+			time.Sleep(5 * time.Second)
+		} else {
+			log.Println("Connected to Kafka")
+			return
+		}
+	}
+}
+
 func set_up_redis() {
   for true {
-    log.Println("Connecting to redis")
+    log.Println("Attempting to connect to redis")
     redis_client = redis.NewClient(&redis.Options{
   		Addr:     "redis:6379",
+			// Addr: "localhost:6379",
   		Password: "",
   		DB:       0,
   	})
@@ -96,11 +106,10 @@ func set_up_redis() {
   	_, err := redis_client.Ping().Result()
 
     if err != nil {
-      log.Println("ERR")
+      log.Println(err)
       time.Sleep(5 * time.Second)
     } else {
-      log.Println("Success")
-      // rediscon_chan <- true
+      log.Println("Connected to Redis")
       return
     }
   }
@@ -117,7 +126,6 @@ func insert_redis(uuid int, post instagram_post) bool {
     log.Printf("insert_redis(%s, %s) -> json.Marshal()", uuid, post)
     return false
   }
-
   size, err := redis_client.LPush(redis_key, string(pst)).Result()
 
   if err != nil {
@@ -131,3 +139,7 @@ func insert_redis(uuid int, post instagram_post) bool {
 
   return true
 }
+// 
+// clef chin/ eye color / widows peak
+//
+// Pedigree Project for biology - tracing heritable traits
