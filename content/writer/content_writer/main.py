@@ -8,6 +8,34 @@ DELETE: Remove a piece of content
 This service forwards the upload to the object store and queues
 events for processing by other components of the system.
 
+Configuration is passed through several environment variables.
+The following variables must be set:
+	- STORAGE_BUCKET: the Google Cloud Storage bucket name
+	- RABBITMQ_SERVICE_SERVICE_HOST: the RabbitMQ host (provided by Kubernetes)
+	- RABBITMQ_SERVICE_SERVICE_PORT: the RabbitMQ port (provided by Kubernetes)
+
+Google Cloud service credentials should work automatically when running on
+Google Cloud infrastructure.
+
+To run the service in a Docker container, you can pass the credentials through
+the environment, for example:
+
+```
+docker network create igclone
+docker run -d --name rabbitmq --network igclone rabbitmq
+# Wait for rabbitmq to start up (this could be handled better)
+docker run -d \
+	--name content_writer \
+	--network igclone \
+	-e RABBITMQ_SERVICE_SERVICE_HOST=rabbitmq \
+	-e RABBITMQ_SERVICE_SERVICE_PORT=5672 \
+	-e STORAGE_BUCKET=385ig \
+	-e GOOGLE_CLOUD_PROJECT=cs385fa18 \
+	-e GOOGLE_APPLICATION_CREDENTIALS=/application_default_credentials.json \
+	-v $HOME/.config/gcloud/application_default_credentials.json:/application_default_credentials.json \
+	content_writer
+```
+
 TODO:
     - request validation
     - logging
@@ -43,7 +71,7 @@ from aioamqp.channel import Channel
 from google.cloud import storage
 
 
-STORAGE_BUCKET = '385ig'
+STORAGE_BUCKET = os.environ['STORAGE_BUCKET']
 
 
 async def mq_connect(app: web.Application):
@@ -131,11 +159,11 @@ async def delete(request: web.Request) -> web.Response:
 
 
 async def init_app(argv=None) -> web.Application:
-    
+
     app = web.Application()
 
     app['storage_client'] = storage.Client()
-    
+
     app.on_startup.append(mq_connect)
     app.on_cleanup.append(mq_close)
 
