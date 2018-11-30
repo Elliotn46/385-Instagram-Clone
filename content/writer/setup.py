@@ -19,7 +19,8 @@ def read_version():
 
 
 install_requires = ['aiohttp',
-                    'aioamqp']
+                    'aioamqp',
+                    'google-cloud-storage']
 
 
 setup(name='content-writer',
