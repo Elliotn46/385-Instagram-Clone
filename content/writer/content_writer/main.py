@@ -61,7 +61,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 """
 
 import os, sys
-import json, uuid
+import json
 from typing import Tuple
 
 from aiohttp import ClientSession, MultipartReader, MultipartWriter, hdrs, web
@@ -71,9 +71,15 @@ from aioamqp.channel import Channel
 
 from google.cloud import storage
 
+from time_uuid import TimeUUID, utctime
+
 
 JWT_SECRET = os.environ['JWT_SECRET']
 STORAGE_BUCKET = os.environ['STORAGE_BUCKET']
+
+
+def make_identifier() -> str:
+    return TimeUUID.with_timestamp(utctime())
 
 
 async def mq_connect(app: web.Application):
@@ -140,7 +146,7 @@ def storage_delete(request: web.Request, identifier: str):
 async def post(request: web.Request) -> web.Response:
     reader = await request.multipart()
     metadata, jpeg = await read_multipart(reader)
-    identifier = str(uuid.uuid4())
+    identifier = make_identifier()
     storage_upload(request, identifier, bytes(jpeg))
     metadata['content_id'] = identifier
     await mq_publish(request, metadata, 'uploads')

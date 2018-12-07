@@ -23,6 +23,7 @@ install_requires = ['aiohttp'
                    ,'aioamqp'
                    ,'google-cloud-storage'
                    ,'idna==2.7'
+                   ,'time-uuid'
                    ]
 
 
