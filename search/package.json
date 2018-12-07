@@ -1,0 +1,16 @@
+{
+  "name": "instagram_search",
+  "version": "1.0.0",
+  "description": "CS386",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "cassandra-driver": "^3.5.0",
+    "express": "^4.16.4"
+  }
+}
