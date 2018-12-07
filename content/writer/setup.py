@@ -18,10 +18,12 @@ def read_version():
             raise RuntimeError(msg)
 
 
-install_requires = ['aiohttp',
-                    'aiohttp_jwt',
-                    'aioamqp',
-                    'google-cloud-storage']
+install_requires = ['aiohttp'
+                   ,'aiohttp_jwt'
+                   ,'aioamqp'
+                   ,'google-cloud-storage'
+                   ,'idna==2.7'
+                   ]
 
 
 setup(name='content-writer',
