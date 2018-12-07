@@ -19,6 +19,7 @@ def read_version():
 
 
 install_requires = ['aiohttp',
+                    'aiohttp_jwt',
                     'aioamqp',
                     'google-cloud-storage']
 

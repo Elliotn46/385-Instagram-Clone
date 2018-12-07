@@ -10,6 +10,7 @@ events for processing by other components of the system.
 
 Configuration is passed through several environment variables.
 The following variables must be set:
+	- JWT_SECRET: the secret string for validating JWT tokens
 	- STORAGE_BUCKET: the Google Cloud Storage bucket name
 	- RABBITMQ_SERVICE_SERVICE_HOST: the RabbitMQ host (provided by Kubernetes)
 	- RABBITMQ_SERVICE_SERVICE_PORT: the RabbitMQ port (provided by Kubernetes)
@@ -29,6 +30,7 @@ docker run -d \
 	--network igclone \
 	-e RABBITMQ_SERVICE_SERVICE_HOST=rabbitmq \
 	-e RABBITMQ_SERVICE_SERVICE_PORT=5672 \
+	-e JWT_SECRET=supersekrit \
 	-e STORAGE_BUCKET=385ig \
 	-e GOOGLE_CLOUD_PROJECT=cs385fa18 \
 	-e GOOGLE_APPLICATION_CREDENTIALS=/application_default_credentials.json \
@@ -37,9 +39,7 @@ docker run -d \
 ```
 
 TODO:
-    - request validation
     - logging
-    - authz/authn
 """
 
 """
@@ -65,12 +65,14 @@ import json, uuid
 from typing import Tuple
 
 from aiohttp import ClientSession, MultipartReader, MultipartWriter, hdrs, web
+from aiohttp_jwt import JWTMiddleware
 import aioamqp
 from aioamqp.channel import Channel
 
 from google.cloud import storage
 
 
+JWT_SECRET = os.environ['JWT_SECRET']
 STORAGE_BUCKET = os.environ['STORAGE_BUCKET']
 
 
@@ -160,7 +162,11 @@ async def delete(request: web.Request) -> web.Response:
 
 async def init_app(argv=None) -> web.Application:
 
-    app = web.Application()
+    app = web.Application(
+        middlewares=[
+            JWTMiddleware(JWT_SECRET)
+        ]
+    )
 
     app['storage_client'] = storage.Client()
 
