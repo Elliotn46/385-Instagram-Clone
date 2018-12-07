@@ -27,9 +27,9 @@ exports.register = async (req, res, next) => {
       const timeuuid = cassandra.types.TimeUuid.now()
       const params = [
         timeuuid,
-        req.body.username || "testtt",
-        req.body.email || "testtt",
-        bcrypt.hashSync(req.body.password || "testtt", 10)
+        req.body.username,
+        req.body.email,
+        bcrypt.hashSync(req.body.password, 10)
       ]
       await client.execute(query, params, { prepare: true  })
       res.cookie('jwt_token', signToken(req.body.username, req.body.email, timeuuid))
