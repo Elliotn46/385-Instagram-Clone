@@ -121,11 +121,11 @@ def storage_blob_name(identifier: str) -> str:
     return f'{identifier}.jpeg'
 
 def storage_upload(request: web.Request, identifier: str, jpeg: bytes):
+    token = request['payload']
     storage_client = request.app['storage_client']
     bucket = storage_client.bucket(STORAGE_BUCKET)
     blob = bucket.blob(storage_blob_name(identifier))
-    # TODO: get user_id from request
-    blob.metadata = {'user_id': 'TODO', 'content_id': identifier}
+    blob.metadata = {'user_id': token.get('user_id'), 'content_id': identifier}
     # XXX: bytes() probably makes a copy, AND the upload is NOT async!
     blob.upload_from_string(bytes(jpeg), content_type='image/jpeg')
 
