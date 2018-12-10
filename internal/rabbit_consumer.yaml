@@ -1,0 +1,20 @@
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: rabbitconsumer
+spec:
+  selector:
+    matchLabels:
+      app: rabbitconsumer
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: rabbitconsumer
+    spec:
+      containers:
+      - image: gcr.io/ssuuuu-222721/rabbit_consumer
+        name: rabbitconsumer
+        #image: nginx:1.8 # Update the version of nginx from 1.7.9 to 1.8
+        #ports:
+                #- containerPort: 80
