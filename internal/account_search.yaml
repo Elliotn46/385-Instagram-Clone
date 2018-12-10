@@ -1,0 +1,23 @@
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: accountsearch
+spec:
+  selector:
+    matchLabels:
+      app: accountsearch
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: accountsearch
+    spec:
+      containers:
+      - image: gcr.io/ssuuuu-222721/account_search
+        name: accountsearch
+        #env:
+                #- name: PORT
+          #    value: 3001
+          # ports:
+                #- containerPort: 3301
+          #   name: cassandra

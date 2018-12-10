@@ -1,0 +1,23 @@
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: accountauth
+spec:
+  selector:
+    matchLabels:
+      app: accountauth
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: accountauth
+    spec:
+      containers:
+      - image: gcr.io/ssuuuu-222721/account_auth
+        name: accountauth
+        env:
+        - name: jwt_token
+          value: bad_password
+          # ports:
+                #- containerPort: 7706
+          #   name: cassandra
