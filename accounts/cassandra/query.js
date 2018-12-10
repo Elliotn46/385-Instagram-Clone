@@ -1,6 +1,7 @@
 const cassandra = require('cassandra-driver')
 const bcrypt = require('bcrypt')
 const client = new cassandra.Client({ contactPoints: ['localhost'], keyspace: 'instagram' })
+const jwt = require('jsonwebtoken')
 require('dotenv').config()
 
 const signToken = (username, email, user_id) => {
@@ -21,7 +22,7 @@ exports.register = async (req, res, next) => {
 
   try {
     //This is bad - Should use zookeeper
-    const { rows } = await client.execute(query, [ req.body.username || "foo" ])
+    const { rows } = await client.execute(query, [ req.body.username ])
     if (rows.length === 0) {
       const query = `insert into instagram.user(user_id, username, email, password) VALUES (?, ?, ?, ?)`
       const timeuuid = cassandra.types.TimeUuid.now()
