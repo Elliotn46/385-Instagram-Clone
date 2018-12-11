@@ -3,6 +3,7 @@ package models
 import (
   "log"
   "time"
+  "os"
   "github.com/streadway/amqp"
 )
 
@@ -11,7 +12,7 @@ var MQChannel     *amqp.Channel
 
 func Init_mq() {
   for true {
-    conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+    conn, err := amqp.Dial(os.Getenv("AMQP_URL"))
     if err != nil {
       log.Println("Attempting to connect to rabbit mq")
       time.Sleep(2 * time.Second)

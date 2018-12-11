@@ -15,6 +15,6 @@ spec:
       containers:
       - image: gcr.io/ssuuuu-222721/rabbit_consumer
         name: rabbitconsumer
-        #image: nginx:1.8 # Update the version of nginx from 1.7.9 to 1.8
-        #ports:
-                #- containerPort: 80
+        env:
+           - name: AMQP_URL
+             value: amqp://guest:guest@rabbitmq/5672
