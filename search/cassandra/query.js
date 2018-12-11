@@ -1,5 +1,5 @@
 const cassandra = require('cassandra-driver');
-const client = new cassandra.Client({ contactPoints: ['localhost'], keyspace: 'instagram' });
+const client = new cassandra.Client({ contactPoints: ['cassandra'], keyspace: 'instagram' });
 
 exports.ping = async (req, res, next) => {
   res.send("PONG")

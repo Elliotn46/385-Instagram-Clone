@@ -1,6 +1,6 @@
 const cassandra = require('cassandra-driver')
 const bcrypt = require('bcrypt')
-const client = new cassandra.Client({ contactPoints: ['localhost'], keyspace: 'instagram' })
+const client = new cassandra.Client({ contactPoints: ['cassandra'], keyspace: 'instagram' })
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
 
