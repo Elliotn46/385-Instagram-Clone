@@ -17,4 +17,4 @@ spec:
         name: rabbitconsumer
         env:
            - name: AMQP_URL
-             value: amqp://guest:guest@rabbitmq/5672
+             value: amqp://guest:guest@rabbitmq:5672
