@@ -12,9 +12,10 @@ var MQChannel     *amqp.Channel
 
 func Init_mq() {
   for true {
-    conn, err := amqp.Dial(os.Getenv("AMQP_URL"))
+	  conn, err := amqp.Dial("amqp://guest:guest@" + os.Getenv("RABBITMQ_SERVICE_SERVICE_HOST") + ":" + os.Getenv("RABBITMQ_SERVICE_SERVICE_PORT"))
     if err != nil {
       log.Println("Attempting to connect to rabbit mq")
+      log.Println(err)
       time.Sleep(2 * time.Second)
     } else {
       MQConnection = conn

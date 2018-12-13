@@ -6,12 +6,13 @@ import (
   "sync"
   "time"
   "strconv"
+  "os"
 )
 
 var CassandraSession *gocql.Session
 
 func Init_cassandra(keyspace string) {
-  cluster := gocql.NewCluster("localhost:9042")
+  cluster := gocql.NewCluster(os.Getenv("CASSANDRA_DB"))
   cluster.Consistency = gocql.One
   if keyspace != "" {
     cluster.Keyspace = keyspace
