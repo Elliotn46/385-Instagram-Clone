@@ -5,6 +5,9 @@ const controllers = require('../cassandra/query')
 
 const Router = express.Router();
 
+Router.route('/ping')
+  .get(controllers.ping)
+
 Router.route('/')
   .post(controllers.getFromTags)
   .get(controllers.ping)

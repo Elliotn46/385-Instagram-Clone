@@ -1,0 +1,1 @@
+for i in $(kubectl get deployments | cut -d ' ' -f 1 | tail -n4); do kubectl delete deployment $i; done;

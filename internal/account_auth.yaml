@@ -18,6 +18,8 @@ spec:
         env:
         - name: jwt_token
           value: bad_password
+        - name: PORT
+          value: "3301"
           # ports:
                 #- containerPort: 7706
           #   name: cassandra

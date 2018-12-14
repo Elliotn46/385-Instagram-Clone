@@ -30,3 +30,5 @@ do
 	kubectl exec $CASS_POD_ID -- cqlsh -e "$element"
 done
 
+echo "Exposing Deployment Search && Auth"
+kubectl expose deployment accountauth accountsearch --port 3301 --type LoadBalancer
