@@ -1,22 +1,21 @@
 package graphics
 
 import (
+  "fmt"
   "path"
   "strings"
   "log"
   "os"
   "os/exec"
   "io"
-  "io/ioutil"
-  "rabbit/models"
   "context"
   "cloud.google.com/go/storage"
 )
 
 func Strcat(a string, b string) string {
-  var b strings.Builder
-  fmt.Fprintf(&b, "%s%s", a, b)
-  return b.String()
+  var buf strings.Builder
+  fmt.Fprintf(&buf, "%s%s", a, b)
+  return buf.String()
 }
 
 func Resize(srcId string) error {
@@ -68,12 +67,15 @@ func Resize(srcId string) error {
   srcFile.Close()
 
 
-  cmd := exec.Command("gm", "convert", "+profile", "*", srcPath,
+  // TODO: Customize compression options could be added.
+  cmd := exec.Command("gm", "convert",
+                      /* [options...], path */
+                      "+profile", "*", srcPath, /* strip EXIF data from src */
                       ogPath,
                       "-resize", "1080x1080", lgPath,
                       "-resize", "612x612", mdPath,
                       "-resize", "161x161",  smPath)
-  if err += cmd.Run(); err != nil {
+  if err := cmd.Run(); err != nil {
     log.Printf("Failed to process image: %v", err)
     return err
   }
@@ -90,11 +92,7 @@ func Resize(srcId string) error {
   }
   defer ogFile.Close()
 
-  ogWriter, err := bucket.Object(ogName).NewWriter(ctx)
-  if err != nil {
-    log.Printf("Failed to create writer for object: %v", err)
-    return err
-  }
+  ogWriter := bucket.Object(ogName).NewWriter(ctx)
   defer ogWriter.Close()
 
   if _, err := io.Copy(ogWriter, ogFile); err != nil {
@@ -113,11 +111,7 @@ func Resize(srcId string) error {
   }
   defer lgFile.Close()
 
-  lgWriter, err := bucket.Object(lgName).NewWriter(ctx)
-  if err != nil {
-    log.Printf("Failed to create writer for object: %v", err)
-    return err
-  }
+  lgWriter := bucket.Object(lgName).NewWriter(ctx)
   defer lgWriter.Close()
 
   if _, err := io.Copy(lgWriter, lgFile); err != nil {
@@ -136,11 +130,7 @@ func Resize(srcId string) error {
   }
   defer mdFile.Close()
 
-  mdWriter, err := bucket.Object(mdName).NewWriter(ctx)
-  if err != nil {
-    log.Printf("Failed to create writer for object: %v", err)
-    return err
-  }
+  mdWriter := bucket.Object(mdName).NewWriter(ctx)
   defer mdWriter.Close()
 
   if _, err := io.Copy(mdWriter, mdFile); err != nil {
@@ -159,11 +149,7 @@ func Resize(srcId string) error {
   }
   defer smFile.Close()
 
-  smWriter, err := bucket.Object(smName).NewWriter(ctx)
-  if err != nil {
-    log.Printf("Failed to create writer for object: %v", err)
-    return err
-  }
+  smWriter := bucket.Object(smName).NewWriter(ctx)
   defer smWriter.Close()
 
   if _, err := io.Copy(smWriter, smFile); err != nil {
@@ -173,4 +159,6 @@ func Resize(srcId string) error {
 
   smWriter.Close()
   smFile.Close()
+
+  return nil
 }

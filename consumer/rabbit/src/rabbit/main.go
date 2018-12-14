@@ -5,7 +5,7 @@ import (
   "sync"
   _ "rabbit/seed"
   "rabbit/models"
-  "graphics"
+  "rabbit/graphics"
   "github.com/streadway/amqp"
 )
 
