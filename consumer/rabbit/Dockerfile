@@ -1,6 +1,6 @@
 FROM alpine as builder
 
-RUN apk update && apk add go git gcc musl-dev graphicsmagick
+RUN apk update && apk add go git gcc musl-dev
 RUN mkdir ~/go
 ENV GOPATH /go
 WORKDIR $GOPATH
