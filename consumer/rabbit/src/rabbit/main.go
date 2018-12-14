@@ -5,8 +5,8 @@ import (
   "sync"
   _ "rabbit/seed"
   "rabbit/models"
+  "graphics"
   "github.com/streadway/amqp"
-
 )
 
 
@@ -34,8 +34,22 @@ func consume(q *amqp.Queue) {
 
   go func() {
     for d := range msgs {
-      models.Update_user_timelines(d.Body)
-      d.Ack(false)
+      post := New_post{}
+      err := post.unmarshall(d.Body)
+      if err != nil
+        || post.User_id == ""
+        || post.Post_id == ""
+        || post.Tag == ""
+        || post.Caption == ""  {
+        if err == nil {
+          err = "missing required field"
+        }
+        log.Println("Malformed JSON object: ", err)
+      }
+      if graphics.Resize(post.Post_id) != nil {
+        models.Update_user_timelines(post)
+        d.Ack(false)
+      }
     }
   }()
 

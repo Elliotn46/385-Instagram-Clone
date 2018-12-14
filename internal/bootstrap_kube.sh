@@ -2,7 +2,7 @@
 
 kubectl create -f rabbitmq-service.yaml
 kubectl create -f cassandra.yaml
-kubectl create -f rabbit_consumer.yaml
+kubectl create -f ../consumer/rabbit/rabbit_consumer.yaml
 kubectl create -f ../accounts/account_search.yaml
 kubectl create -f ../accounts/account_auth.yaml
 

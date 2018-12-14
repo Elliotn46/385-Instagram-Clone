@@ -53,17 +53,7 @@ func Get_user_timeline_length() int {
   return int
 }
 
-func Update_user_timelines(data []byte) {
-  post := New_post{}
-  err := post.unmarshall(data)
-  if err != nil || post.User_id == "" || post.Post_id == "" || post.Tag == "" || post.Caption == ""  {
-    log.Println("Malformed JSON object, ", err)
-    return
-  }
-  if post.User_id == "" || post.Post_id == "" || /*post.Tag == "" ||*/ post.Caption == "" {
-    return
-  }
-
+func Update_user_timelines(post New_post) {
   y, m, _ := time.Now().Date()
   monthyear := m.String() + "/" + strconv.Itoa(y)
 
