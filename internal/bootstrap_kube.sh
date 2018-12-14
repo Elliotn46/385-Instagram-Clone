@@ -1,11 +1,12 @@
+#! /usr/bin/env bash
 
 kubectl create -f rabbitmq-service.yaml
 kubectl create -f cassandra.yaml
 kubectl create -f rabbit_consumer.yaml
-kubectl create -f account_search.yaml
-kubectl create -f account_auth.yaml
+kubectl create -f ../accounts/account_search.yaml
+kubectl create -f ../accounts/account_auth.yaml
 
-CASS_POD_ID=`kubectl get pods | grep cassandra | cut -d ' ' -f 1`
+CASS_POD_ID=`kubectl get pods | awk '/cassandra/ { print $1 }'`
 
 until kubectl exec $CASS_POD_ID -- cqlsh -e "show version";
 do

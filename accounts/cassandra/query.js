@@ -4,12 +4,17 @@ const client = new cassandra.Client({ contactPoints: ['cassandra'], keyspace: 'i
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
 
+const saltRounds = 10
+
 const signToken = (username, email, user_id) => {
-  return jwt.sign({
-    username,
-    email,
-    user_id
-  }, process.env.jwt_token)
+  return new Promise((resolve, reject) => jwt.sign(
+    { username, email, user_id },
+    process.env.JWT_SECRET,
+    (err, token) => {
+      if (err) reject(err)
+      else resolve(token)
+    }
+  ))
 }
 
 exports.pong = async (req, res, next) => {
@@ -17,9 +22,8 @@ exports.pong = async (req, res, next) => {
 }
 
 exports.register = async (req, res, next) => {
-
-  const query =  `select * from instagram.user where username = ? allow filtering`
-
+  // TODO: rate limit to prevent abuse
+  const query = `select * from instagram.user where username = ? allow filtering`
   try {
     //This is bad - Should use zookeeper
     const { rows } = await client.execute(query, [ req.body.username ])
@@ -30,20 +34,17 @@ exports.register = async (req, res, next) => {
         timeuuid,
         req.body.username,
         req.body.email,
-        bcrypt.hashSync(req.body.password, 10)
+        await bcrypt.hash(req.body.password, saltRounds)
       ]
-      await client.execute(query, params, { prepare: true  })
-      res.cookie('jwt_token', signToken(req.body.username, req.body.email, timeuuid))
-
-      res.status(200).json({"Success": true})
-
+      await client.execute(query, params, { prepare: true })
+      const token = signToken(req.body.username, req.body.email, timeuuid)
+      res.status(200).json({ "status": "success", token })
     } else {
-      throw "Username Taken"
+      res.status(400).json({ "status": "bad request", "error": "invalid credentials or account already exists" })
     }
   } catch (err) {
-    res.status(500).json({"error": err})
+    res.status(500).json({ "status": "internal server error", "error": err })
   }
-
 }
 
 exports.login = async (req, res, next) => {
@@ -58,16 +59,15 @@ exports.login = async (req, res, next) => {
           email,
           user_id
         } = rows[0]
-
-        res.cookie('jwt_token', signToken(username, email, user_id))
-        res.status(200).json({"Success": true})
-        return
+        const token = await signToken(username, email, user_id)
+        res.status(200).json({ "status": "success", token })
       } else {
-        throw "Could not find account"
+        res.set("WWW-Authenticate", "login")
+        res.status(401).json({ "status": "unauthorized", "error": "bad credentials" })
       }
     }
   } catch (err) {
-    res.status(500).json({"error": err})
+    res.status(500).json({ "status": "internal server error", "error": err })
   }
 
 }

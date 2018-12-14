@@ -16,8 +16,11 @@ spec:
       - image: gcr.io/ssuuuu-222721/account_auth
         name: accountauth
         env:
-        - name: jwt_token
-          value: bad_password
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: jwt-secret
         - name: PORT
           value: "3301"
           # ports:

@@ -10,6 +10,7 @@ app.use(bodyParser.json())
 
 app.use('/account', routes)
 
+// XXX: THIS SHOULD REQUIRE AUTHENTICATION!
 app.get('/cpu', (req, res) => {
    //Compute last digit of Pi
    var Pi=0;
@@ -25,8 +26,8 @@ app.get('/cpu', (req, res) => {
    res.send(`Pi is ${Pi}`);
 })
 
-if (!process.env.jwt_token)
-  throw new Error("No JWT TOKEN")
+if (!process.env.JWT_SECRET)
+  throw new Error("JWT_SECRET missing from process environment")
 
 const port = process.env.PORT || 3001;
 
