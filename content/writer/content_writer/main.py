@@ -10,6 +10,7 @@ events for processing by other components of the system.
 
 Configuration is passed through several environment variables.
 The following variables must be set:
+	- JWT_SECRET: the secret string for validating JWT tokens
 	- STORAGE_BUCKET: the Google Cloud Storage bucket name
 	- RABBITMQ_SERVICE_SERVICE_HOST: the RabbitMQ host (provided by Kubernetes)
 	- RABBITMQ_SERVICE_SERVICE_PORT: the RabbitMQ port (provided by Kubernetes)
@@ -29,6 +30,7 @@ docker run -d \
 	--network igclone \
 	-e RABBITMQ_SERVICE_SERVICE_HOST=rabbitmq \
 	-e RABBITMQ_SERVICE_SERVICE_PORT=5672 \
+	-e JWT_SECRET=supersekrit \
 	-e STORAGE_BUCKET=385ig \
 	-e GOOGLE_CLOUD_PROJECT=cs385fa18 \
 	-e GOOGLE_APPLICATION_CREDENTIALS=/application_default_credentials.json \
@@ -37,9 +39,7 @@ docker run -d \
 ```
 
 TODO:
-    - request validation
     - logging
-    - authz/authn
 """
 
 """
@@ -61,17 +61,25 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 """
 
 import os, sys
-import json, uuid
+import json
 from typing import Tuple
 
 from aiohttp import ClientSession, MultipartReader, MultipartWriter, hdrs, web
+from aiohttp_jwt import JWTMiddleware
 import aioamqp
 from aioamqp.channel import Channel
 
 from google.cloud import storage
 
+from time_uuid import TimeUUID, utctime
 
+
+JWT_SECRET = os.environ['JWT_SECRET']
 STORAGE_BUCKET = os.environ['STORAGE_BUCKET']
+
+
+def make_identifier() -> str:
+    return TimeUUID.with_timestamp(utctime())
 
 
 async def mq_connect(app: web.Application):
@@ -119,11 +127,11 @@ def storage_blob_name(identifier: str) -> str:
     return f'{identifier}.jpeg'
 
 def storage_upload(request: web.Request, identifier: str, jpeg: bytes):
+    token = request['payload']
     storage_client = request.app['storage_client']
     bucket = storage_client.bucket(STORAGE_BUCKET)
     blob = bucket.blob(storage_blob_name(identifier))
-    # TODO: get user_id from request
-    blob.metadata = {'user_id': 'TODO', 'content_id': identifier}
+    blob.metadata = {'user_id': token.get('user_id'), 'content_id': identifier}
     # XXX: bytes() probably makes a copy, AND the upload is NOT async!
     blob.upload_from_string(bytes(jpeg), content_type='image/jpeg')
 
@@ -138,7 +146,7 @@ def storage_delete(request: web.Request, identifier: str):
 async def post(request: web.Request) -> web.Response:
     reader = await request.multipart()
     metadata, jpeg = await read_multipart(reader)
-    identifier = str(uuid.uuid4())
+    identifier = make_identifier()
     storage_upload(request, identifier, bytes(jpeg))
     metadata['content_id'] = identifier
     await mq_publish(request, metadata, 'uploads')
@@ -160,7 +168,11 @@ async def delete(request: web.Request) -> web.Response:
 
 async def init_app(argv=None) -> web.Application:
 
-    app = web.Application()
+    app = web.Application(
+        middlewares=[
+            JWTMiddleware(JWT_SECRET)
+        ]
+    )
 
     app['storage_client'] = storage.Client()
 
