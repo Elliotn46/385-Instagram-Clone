@@ -10,6 +10,12 @@ app.use('/search', routes)
 
 const port = process.env.PORT || 3001;
 
+app.get('/cpu', (req, res) => {
+   function fibonacci(n) { return n < 1 ? 0 : n <= 2 ? 1 : fibonacci(n - 1) + fibonacci(n - 2); }
+   let result = fibonacci(Math.floor(Math.random() * 500));
+   res.send(result);
+}) 
+
 const sleep = ms => {
   return new Promise(resolve => setTimeout(resolve, ms))
 }

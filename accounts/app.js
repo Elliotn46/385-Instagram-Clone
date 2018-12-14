@@ -10,6 +10,21 @@ app.use(bodyParser.json())
 
 app.use('/account', routes)
 
+app.get('/cpu', (req, res) => {
+   //Compute last digit of Pi
+   var Pi=0;
+   var n=1;
+   for (i=0;i<=10000000000;i++) {
+      Pi=Pi+(4/n)
+      n=n+2
+      Pi=Pi-(4/n)
+      n=n+2
+   }
+   //function fibonacci(n) { return n < 1 ? 0 : n <= 2 ? 1 : fibonacci(n - 1) + fibonacci(n - 2); }
+   //let result = fibonacci(Math.floor(Math.random() * 300));
+   res.send(`Pi is ${Pi}`);
+})
+
 if (!process.env.jwt_token)
   throw new Error("No JWT TOKEN")
 

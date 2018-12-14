@@ -32,3 +32,8 @@ done
 
 echo "Exposing Deployment Search && Auth"
 kubectl expose deployment accountauth accountsearch --port 3301 --type LoadBalancer
+
+echo "Setting up autoscaler on auth && search"
+kubectl autoscale deployment accountauth accountsearch --min=1 --max=5 --cpu-percent=50
+
+kubectl get hpa
