@@ -37,7 +37,7 @@ exports.register = async (req, res, next) => {
         await bcrypt.hash(req.body.password, saltRounds)
       ]
       await client.execute(query, params, { prepare: true })
-      const token = signToken(req.body.username, req.body.email, timeuuid)
+      const token = await signToken(req.body.username, req.body.email, timeuuid)
       res.status(200).json({ "status": "success", token })
     } else {
       res.status(400).json({ "status": "bad request", "error": "invalid credentials or account already exists" })
