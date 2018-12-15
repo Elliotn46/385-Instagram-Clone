@@ -32,7 +32,7 @@ docker run -d \
 	-e RABBITMQ_SERVICE_SERVICE_PORT=5672 \
 	-e JWT_SECRET=supersekrit \
 	-e STORAGE_BUCKET=385ig \
-	-e GOOGLE_CLOUD_PROJECT=cs385fa18 \
+	-e GOOGLE_CLOUD_PROJECT=ssuuuu-222721 \
 	-e GOOGLE_APPLICATION_CREDENTIALS=/application_default_credentials.json \
 	-v $HOME/.config/gcloud/application_default_credentials.json:/application_default_credentials.json \
 	content_writer

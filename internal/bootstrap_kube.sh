@@ -1,10 +1,14 @@
 #! /usr/bin/env bash
 
-kubectl create -f rabbitmq-service.yaml
-kubectl create -f cassandra.yaml
-kubectl create -f rabbit_consumer.yaml
-kubectl create -f ../accounts/account_search.yaml
-kubectl create -f ../accounts/account_auth.yaml
+repo=$(dirname $0)/..
+project=$(gcloud config get-value project)
+
+for cfg in $(find $repo -name '*.yaml')
+do
+	tmpcfg="/tmp/$(basename $cfg)"
+	sed "s|ssuuuu-222721|${project}|g" <$cfg >$tmpcfg
+	kubectl create -f $tmpcfg
+done
 
 CASS_POD_ID=`kubectl get pods | awk '/cassandra/ { print $1 }'`
 

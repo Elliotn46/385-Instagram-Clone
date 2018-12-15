@@ -13,12 +13,13 @@ spec:
         app: rabbitconsumer
     spec:
       containers:
-      - image: gcr.io/ssuuuu-222721/rabbit_consumer
+      - image: gcr.io/ssuuuu-222721/consumer/rabbit
         name: rabbitconsumer
         env:
-        - name: RABBITMQ_SERVICE_SERVICE_HOST
-          value: "rabbitmq-service"
-        - name: RABBITMQ_SERVICE_SERVICE_PORT
-          value: "5672"
+        - name: STORAGE_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: storage-bucket
         - name: CASSANDRA_DB
           value: "cassandra"
