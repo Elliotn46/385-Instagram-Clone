@@ -17,4 +17,4 @@ spec:
         name: accountsearch
         env:
          - name: PORT
-           value: 3001
+           value: "3001"

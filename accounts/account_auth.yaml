@@ -22,4 +22,4 @@ spec:
               name: secrets
               key: jwt-secret
         - name: PORT
-          value: 3301
+          value: "3301"
