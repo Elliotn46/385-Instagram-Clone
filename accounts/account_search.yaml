@@ -16,5 +16,10 @@ spec:
       - image: gcr.io/ssuuuu-222721/accounts/search
         name: accountsearch
         env:
-         - name: PORT
-           value: "3001"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: jwt-secret
+        - name: PORT
+          value: "3001"
