@@ -13,11 +13,8 @@ spec:
         app: accountsearch
     spec:
       containers:
-      - image: gcr.io/ssuuuu-222721/account_search
+      - image: gcr.io/ssuuuu-222721/accounts/search
         name: accountsearch
         env:
          - name: PORT
-           value: "3001"
-          # ports:
-                #- containerPort: 3301
-          #   name: cassandra
+           value: 3001

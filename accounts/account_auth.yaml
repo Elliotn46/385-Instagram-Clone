@@ -13,7 +13,7 @@ spec:
         app: accountauth
     spec:
       containers:
-      - image: gcr.io/ssuuuu-222721/account_auth
+      - image: gcr.io/ssuuuu-222721/accounts/auth
         name: accountauth
         env:
         - name: JWT_SECRET
@@ -22,7 +22,4 @@ spec:
               name: secrets
               key: jwt-secret
         - name: PORT
-          value: "3301"
-          # ports:
-                #- containerPort: 7706
-          #   name: cassandra
+          value: 3301

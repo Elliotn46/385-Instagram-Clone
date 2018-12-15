@@ -13,7 +13,7 @@ spec:
         app: rabbitconsumer
     spec:
       containers:
-      - image: gcr.io/ssuuuu-222721/rabbit_consumer
+      - image: gcr.io/ssuuuu-222721/consumer/rabbit
         name: rabbitconsumer
         env:
         - name: STORAGE_BUCKET
