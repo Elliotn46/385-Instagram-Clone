@@ -1,6 +1,7 @@
 package main
 
 import (
+  "errors"
   "log"
   "sync"
   _ "rabbit/seed"
@@ -34,15 +35,14 @@ func consume(q *amqp.Queue) {
 
   go func() {
     for d := range msgs {
-      post := New_post{}
-      err := post.unmarshall(d.Body)
-      if err != nil
-        || post.User_id == ""
-        || post.Post_id == ""
-        || post.Tag == ""
-        || post.Caption == ""  {
+      post := models.New_post{}
+      if err := post.Unmarshall(d.Body); err != nil ||
+          post.User_id == "" ||
+          post.Post_id == "" ||
+          post.Tag == "" ||
+          post.Caption == "" {
         if err == nil {
-          err = "missing required field"
+          err = errors.New("missing required field")
         }
         log.Println("Malformed JSON object: ", err)
       }

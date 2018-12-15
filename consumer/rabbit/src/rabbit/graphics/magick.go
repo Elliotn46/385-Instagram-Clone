@@ -12,18 +12,18 @@ import (
   "cloud.google.com/go/storage"
 )
 
-func Strcat(a string, b string) string {
+func strcat(a string, b string) string {
   var buf strings.Builder
   fmt.Fprintf(&buf, "%s%s", a, b)
   return buf.String()
 }
 
 func Resize(srcId string) error {
-  srcName := Strcat(srcId, ".jpeg")
-  ogName := Strcat(srcId, "_og.jpeg")
-  lgName := Strcat(srcId, "_lg.jpeg")
-  mdName := Strcat(srcId, "_md.jpeg")
-  smName := Strcat(srcId, "_sm.jpeg")
+  srcName := strcat(srcId, ".jpeg")
+  ogName := strcat(srcId, "_og.jpeg")
+  lgName := strcat(srcId, "_lg.jpeg")
+  mdName := strcat(srcId, "_md.jpeg")
+  smName := strcat(srcId, "_sm.jpeg")
 
   srcPath := path.Join("/tmp", srcName)
   ogPath := path.Join("/tmp", ogName)

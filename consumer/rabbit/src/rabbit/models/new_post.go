@@ -14,7 +14,7 @@ type New_post struct {
   Caption  string `json:"caption"`
 }
 
-func (post* New_post) unmarshall(data []byte) error {
+func (post* New_post) Unmarshall(data []byte) error {
   return json.Unmarshal(data, &post)
 }
 
